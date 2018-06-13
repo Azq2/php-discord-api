@@ -92,10 +92,11 @@ class DiscordApiChain {
 	private $parts;
 	
 	private static $api_methods = array(
-		'GET'	=> true, 
-		'PUT'	=> true, 
-		'POST'	=> true, 
-		'PATCH'	=> true, 
+		'GET'		=> true, 
+		'PUT'		=> true, 
+		'POST'		=> true, 
+		'PATCH'		=> true, 
+		'DELETE'	=> true, 
 	);
 	
 	public function __construct($api, $parts) {

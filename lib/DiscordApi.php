@@ -43,7 +43,7 @@ class DiscordApi extends DiscordApiChain {
 			CURLOPT_URL					=> $this->options['api_base'].$url."?wait=true", 
 			CURLOPT_CUSTOMREQUEST		=> $method, 
 			CURLOPT_POST				=> $method != "GET", 
-			CURLOPT_POSTFIELDS			=> json_encode($data), 
+			CURLOPT_POSTFIELDS			=> ($type == "form" ? $data : json_encode($data)), 
 			CURLOPT_HTTPHEADER			=> array(
 				"Content-Type: ".($type == "form" ? "multipart/form-data" : "application/json"), 
 				"Authorization: ".$this->options['token_type']." ".$this->options['token']

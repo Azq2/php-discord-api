@@ -33,19 +33,19 @@ class DiscordApi extends DiscordApiChain {
 			CURLOPT_CONNECTTIMEOUT		=> $this->options['connect_timeout'], 
 		));
 		
-		parent::__construct($this, array());
+		parent::__construct($this, array(), "json");
 	}
 	
-	public function exec($method, $url, $data = "") {
-		echo "$method $url (".json_encode($data).")\n";
+	public function exec($method, $url, $data = "", $type = "form") {
+		// echo "$method $url (".json_encode($data).")\n";
 		
 		curl_setopt_array($this->ch, array(
 			CURLOPT_URL					=> $this->options['api_base'].$url."?wait=true", 
 			CURLOPT_CUSTOMREQUEST		=> $method, 
 			CURLOPT_POST				=> $method != "GET", 
-			CURLOPT_POSTFIELDS			=> $data, 
+			CURLOPT_POSTFIELDS			=> json_encode($data), 
 			CURLOPT_HTTPHEADER			=> array(
-				"Content-Type: multipart/form-data", 
+				"Content-Type: ".($type == "form" ? "multipart/form-data" : "application/json"), 
 				"Authorization: ".$this->options['token_type']." ".$this->options['token']
 			)
 		));
@@ -74,7 +74,10 @@ class DiscordApi extends DiscordApiChain {
 		if (!$this->options['exceptions'] || in_array($code, array(200, 201, 204, 304)))
 			return $json;
 		
-		throw new Exception($json->message, $json->code);
+		if (isset($json->message, $json->code))
+			throw new Exception($json->message, $json->code);
+		
+		throw new Exception("Invalid response (status=$code): $res");
 	}
 	
 	public static function snowflake($value) {
@@ -90,6 +93,7 @@ class DiscordApi extends DiscordApiChain {
 class DiscordApiChain {
 	private $api;
 	private $parts;
+	private $type = "json";
 	
 	private static $api_methods = array(
 		'GET'		=> true, 
@@ -99,9 +103,10 @@ class DiscordApiChain {
 		'DELETE'	=> true, 
 	);
 	
-	public function __construct($api, $parts) {
+	public function __construct($api, $parts, $type) {
 		$this->api = $api;
 		$this->parts = $parts;
+		$this->type = $type;
 	}
 	
 	public function __get($method) {
@@ -115,13 +120,15 @@ class DiscordApiChain {
 		
 		$uc_method = strtoupper($method);
 		if (isset(self::$api_methods[$uc_method])) {
-			return $this->api->exec($uc_method, implode("/", $this->parts), isset($args[0]) ? $args[0] : "");
+			return $this->api->exec($uc_method, implode("/", $this->parts), isset($args[0]) ? $args[0] : "", $this->type);
+		} else if ($uc_method == "UPLOAD") {
+			$this->type = "form";
 		} else {
 			$parts = $this->parts;
 			$parts[] = $method;
 			if (count($args))
 				$parts[] = $args[0];
-			return new DiscordApiChain($this->api, $parts);
+			return new DiscordApiChain($this->api, $parts, $this->type);
 		}
 	}
 }

@@ -36,14 +36,12 @@ class DiscordApi extends DiscordApiChain {
 		parent::__construct($this, array(), "json");
 	}
 	
-	public function exec($method, $url, $data = "", $type = "form") {
-		// echo "$method $url (".json_encode($data).")\n";
-		
+	public function exec($method, $url, $data = NULL, $type = "form") {
 		curl_setopt_array($this->ch, array(
 			CURLOPT_URL					=> $this->options['api_base'].$url."?wait=true", 
 			CURLOPT_CUSTOMREQUEST		=> $method, 
 			CURLOPT_POST				=> $method != "GET", 
-			CURLOPT_POSTFIELDS			=> ($type == "form" ? $data : json_encode($data)), 
+			CURLOPT_POSTFIELDS			=> is_null($data) ? "" : ($type == "form" ? $data : json_encode($data)), 
 			CURLOPT_HTTPHEADER			=> array(
 				"Content-Type: ".($type == "form" ? "multipart/form-data" : "application/json"), 
 				"Authorization: ".$this->options['token_type']." ".$this->options['token']
@@ -57,7 +55,6 @@ class DiscordApi extends DiscordApiChain {
 			$json = NULL;
 		} else if ($code) {
 			$json = @json_decode($res);
-			
 			if (json_last_error()) {
 				$json = (object) array(
 					'code'		=> 0, 
@@ -120,7 +117,7 @@ class DiscordApiChain {
 		
 		$uc_method = strtoupper($method);
 		if (isset(self::$api_methods[$uc_method])) {
-			return $this->api->exec($uc_method, implode("/", $this->parts), isset($args[0]) ? $args[0] : "", $this->type);
+			return $this->api->exec($uc_method, implode("/", $this->parts), isset($args[0]) ? $args[0] : NULL, $this->type);
 		} else if ($uc_method == "UPLOAD") {
 			$this->type = "form";
 		} else {
